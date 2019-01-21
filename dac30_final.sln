@@ -1,0 +1,23 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28010.2041
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "dac30_final", "dac30_final\dac30_final.pyproj", "{67A1FB09-6845-4DF9-8A38-4CA40CDEDF89}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{67A1FB09-6845-4DF9-8A38-4CA40CDEDF89}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{67A1FB09-6845-4DF9-8A38-4CA40CDEDF89}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D5502C09-FF78-4F47-A717-14A3073007AD}
+	EndGlobalSection
+EndGlobal
