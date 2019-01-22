@@ -25,7 +25,7 @@ while True:
         if kb.decode() == "f":
             inp_file = "tv_dl_input.csv"
             oup_file = "tv_dl_output.csv"
-            res_file = "result_full"
+            res_file = "result"
             train_size = 95000
             break
 
@@ -81,14 +81,24 @@ while True:
         kb = msvcrt.getch()
         if kb.decode() == "t":
             trainer.run()
+            break
         elif kb.decode() == "p":
+            inf_net = L.Classifier(DMMChain(),lossfun=F.mean_squared_error)
             serializers.load_npz(
-                res_file + '/snapshot_epoch-101',
-                model, path='updater/model:main/predictor/')
-            for i in range(10):
-                test_data = inp.fillna(0)
-                x = np.asarray(test_data[i,:]).astype(np.float32)
+                res_file + '/snapshot_epoch-1000',
+                inf_net, path='updater/model:main/predictor/',strict = False)
+            out = oup
+            test_data = inp.fillna(0)
+            test_data = np.asarray(test_data).astype(np.float32)
+            for i in range(inp.shape[0]):
+                x = test_data[i,:]
                 x = x.reshape((1,-1))
                 x = chainer.Variable(x)
                 y = model.predictor(x)
-                print(y.data) 
+                #print(y.data)
+                out.iloc[i,:] = y.data[0]
+                if i % 1000 == 0:
+                    print(i)
+
+            out.to_csv("setsumei.csv")
+            break
