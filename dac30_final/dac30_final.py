@@ -91,4 +91,4 @@ while True:
                 x = x.reshape((1,-1))
                 x = chainer.Variable(x)
                 y = model.predictor(x)
-                print(y.data)
+                print(y.data) 
