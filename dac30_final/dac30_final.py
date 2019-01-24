@@ -11,6 +11,10 @@ from chainer.cuda import to_cpu
 import pandas as pd
 import random
 import msvcrt
+from santa import Santa, SantaE
+from eve import Eve
+
+n_epoch = 1000
 
 print("which? full:f mini:m")
 while True:
@@ -21,12 +25,14 @@ while True:
             oup_file = "tv_dl_output_1000.csv"
             res_file = "result"
             train_size = 850
+            batch_size = 32
             break
         if kb.decode() == "f":
             inp_file = "tv_dl_input.csv"
             oup_file = "tv_dl_output.csv"
             res_file = "result"
             train_size = 95000
+            batch_size = 128
             break
 
 
@@ -40,39 +46,46 @@ Y = Y.values.astype(np.float32)
 Y = np.reshape(Y,(X.shape[0],25))
 
 train,test = datasets.split_dataset_random(chainer.datasets.TupleDataset(X,Y),train_size)
-train_iter = chainer.iterators.SerialIterator(train, 128)
-test_iter = chainer.iterators.SerialIterator(test, 128, repeat=False, shuffle=True)
+train_iter = chainer.iterators.SerialIterator(train, batch_size)
+test_iter = chainer.iterators.SerialIterator(test, batch_size, repeat=False, shuffle=True)
 
 class DMMChain(Chain):
     def __init__(self):
-        super(DMMChain,self).__init__(
-            l1=L.Linear(None,128),
-            l2=L.Linear(128,128),
-            l3=L.Linear(128,16),
-            l4=L.Linear(16,25)
-            )
+        super(DMMChain,self).__init__()
+        with self.init_scope():
+            self.l1=L.Linear(None,128)
+            self.l2=L.Linear(128,256)
+            self.l3=L.Linear(256,25)
+            
 
     def __call__(self,x):
-        h = F.relu(self.l1(x))
-        h = F.dropout(F.relu(self.l2(h)))
-        h = F.dropout(F.relu(self.l3(h)))
-        return F.relu(self.l4(h))
+        h = F.leaky_relu(self.l1(x))
+        #h = F.dropout(F.leaky_relu(self.l2(h)))
+        #h = F.dropout(F.leaky_relu(self.l3(h)))
+        h = F.leaky_relu(self.l2(h))
+        h = F.leaky_relu(self.l3(h))
+        h1 = h.data
+        h1[:,0] = F.relu(h1[:,0]).data
+        h1[:,1:3] = F.sigmoid(h1[:,1:3]).data
+        h1[:,3:9] = F.softmax(h1[:,3:9]).data
+        h1[:,9:25] = F.softmax(h1[:,9:25]).data
+        return Variable(h1)
 
 model = L.Classifier(DMMChain(),lossfun=F.mean_squared_error)
 model.compute_accuracy = False
-optimizer = chainer.optimizers.Adam(alpha = 0.0001)
+optimizer = chainer.optimizers.Adam()
 optimizer.setup(model)
-optimizer.add_hook(chainer.optimizer.WeightDecay(0.0005))
-
+optimizer.add_hook(chainer.optimizer.WeightDecay(0.005))
+optimizer.add_hook(chainer.optimizer_hooks.Lasso(0.005))
 updater = training.StandardUpdater(train_iter,optimizer,device=-1)
-trainer = training.Trainer(updater,(1000,"epoch"),out=res_file)
+trainer = training.Trainer(updater,(n_epoch,"epoch"),out=res_file)
 
 trainer.extend(extensions.ProgressBar())
 trainer.extend(extensions.LogReport())
-trainer.extend(extensions.snapshot(filename="snapshot_epoch-{.updater.epoch}"))
+trainer.extend(extensions.snapshot(filename="snapshot_epoch-{.updater.epoch}"),trigger=(100,'epoch'))
 trainer.extend(extensions.Evaluator(test_iter,model,device=-1))
 trainer.extend(extensions.PrintReport(["epoch","main/loss","validation/main/loss","elapsed_time"]))
-trainer.extend(extensions.PlotReport(["main/loss","validation/main/loss"],x_key="epoch",file_name=res_file))
+trainer.extend(extensions.PlotReport(["main/loss","validation/main/loss"],x_key="epoch",file_name=res_file,trigger=training.triggers.ManualScheduleTrigger(list(range(10,n_epoch,(n_epoch//1000)+1)),'epoch')))
 trainer.extend(extensions.dump_graph("main/loss"))
 
 print("which? train:t predict:p")
